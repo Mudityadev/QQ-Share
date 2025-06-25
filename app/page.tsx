@@ -2,6 +2,7 @@
 import Image from "next/image";
 import { Button } from "../components/ui/button";
 import React, { useRef, useState } from "react";
+import { toast } from "@/components/ui/toaster";
 
 export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -28,6 +29,7 @@ export default function Home() {
       }
       const data = await res.json();
       setResult(data);
+      toast.success("Upload completed! Link copied to clipboard.");
     } catch (err: any) {
       setError(err.message || "Upload failed");
     } finally {
