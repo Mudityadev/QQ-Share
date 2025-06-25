@@ -3,9 +3,9 @@ import { purgeExpired, getMeta, getObject, deletePair } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await purgeExpired();
-  const { id } = params;
+  const { id } = await params;
   let meta;
   try {
     meta = await getMeta(id);
@@ -37,9 +37,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   });
 }
 
-export async function HEAD(req: NextRequest, { params }: { params: { id: string } }) {
+export async function HEAD(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await purgeExpired();
-  const { id } = params;
+  const { id } = await params;
   let meta;
   try {
     meta = await getMeta(id);
