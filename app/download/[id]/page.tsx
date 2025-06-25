@@ -59,7 +59,6 @@ export default function DownloadPage() {
         </div>
         {error ? (
           <div className="flex flex-col items-center gap-2 text-center">
-            <Image src="/logo-transparent.png" alt="QQShare logo" width={64} height={64} className="dark:invert drop-shadow-lg mb-2" />
             <span className="text-destructive text-lg font-semibold">{error}</span>
             <span className="text-muted-foreground text-sm">If you believe this is a mistake, please ask the sender to re-upload the file.</span>
           </div>
