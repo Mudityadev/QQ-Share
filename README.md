@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# QQShare
 
-## Getting Started
+**QQShare** is a secure, one-time file sharing service. Upload a file (≤ 100 MB), get a link, and share it for a single download within 60 minutes. All encryption is 100% client-side (AES-GCM-256), and the decryption secret is only in the link fragment.
 
-First, run the development server:
+## Features
+- One-time file sharing (file is deleted after first download)
+- 60-minute expiry for uploads
+- 100% client-side encryption (optional password)
+- No file or secret ever sent unencrypted
+- Modern, dark JetBrains/Apple-style UI
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Tech Stack
+- **Frontend:** Next.js 14 (App Router, React 18), Tailwind CSS, shadcn/ui
+- **Crypto:** Browser Web Crypto API
+- **Backend:** Next.js Route Handlers (API)
+- **Storage:** Local FS (`/tmp/onedrop/<id>.bin` and `<id>.json`)
+
+## Usage
+1. Run the dev server:
+   ```bash
+   npm run dev
+   # or: yarn dev / pnpm dev / bun dev
+   ```
+2. Open [http://localhost:3000](http://localhost:3000)
+3. Upload a file and share the generated link.
+
+## API
+- `POST /api/upload` — Uploads file, returns `{ id, expiresAt }`
+- `GET /api/download/[id]` — Downloads file (once), then deletes it. Second attempt returns 410.
+
+## Environment Variables
+```
+FILE_TTL_MINUTES=60
+MAX_FILE_SIZE_MB=100
+NODE_ENV=development
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Notes
+- All files are stored in `/tmp/onedrop` and purged after expiry or download.
+- No AWS/Redis dependencies. Pure local FS.
+- For production, ensure `/tmp` is writable and persists ≤ 60 min.

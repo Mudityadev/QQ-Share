@@ -1,0 +1,104 @@
+──────────────────────────────────────────────────────────────────────────────
+1.  PRODUCT OVERVIEW (unchanged)
+
+Project Name - QQShare
+──────────────────────────────────────────────────────────────────────────────
+• Sender can share ONE file (≤ 100 MB) exactly ONCE, within 60 min, via a link
+  whose fragment (`#…`) carries all decryption secrets.  
+• 100 % client-side AES-GCM-256 encryption, optional password, dark JetBrains /
+  Apple-style UI.
+
+──────────────────────────────────────────────────────────────────────────────
+2.  TECH STACK  –
+──────────────────────────────────────────────────────────────────────────────
+Frontend / UI     : Next.js 14 (App Router, React 18)  
+Styling           : Tailwind CSS v3, shadcn/ui  
+Crypto            : Browser Web Crypto API  
+Backend           : Next.js Route Handlers (`app/api/**`)  
+File storage      : Local FS – **`/tmp/onedrop/<id>.bin`** (cipher-text)  
+Token / metadata  : Local FS – **`/tmp/onedrop/<id>.json`**  
+TTL & cleanup     :  • Immediate deletion after 1st download  
+                    • Lazy sweep: every new upload/download iterates
+                      `/tmp/onedrop` and purges stale entries  
+Deployment note   : Requires a host that offers a writable TMP dir that
+                    persists across function invocations for ≤ 60 min
+                    (Fly Volumes, Render workers, bare-metal, etc.).  
+Testing           : Vitest + React Testing Library, ESLint + Prettier  
+
+──────────────────────────────────────────────────────────────────────────────
+3.  FOLDER / FILE MAP  – NB: new helper for FS KV
+──────────────────────────────────────────────────────────────────────────────
+•  `lib/`
+   ├─ `storage.ts`             ← **new** FS helper  
+        - `putObject(id, bytes)`   → writes `/tmp/onedrop/<id>.bin`  
+        - `putMeta(id, meta)`      → writes `/tmp/onedrop/<id>.json`  
+        - `getObject(id)`  
+        - `getMeta(id)`            → returns `{ expiresAt: number }`  
+        - `deletePair(id)`         → removes both files  
+        - `purgeExpired()`         → scans dir, deletes stale pairs  
+   └─ … (crypto helpers unchanged)
+
+API routes call `purgeExpired()` first to keep the directory tidy.
+
+──────────────────────────────────────────────────────────────────────────────
+4.  API CONTRACTS  – implementation tweaks only
+──────────────────────────────────────────────────────────────────────────────
+### 4.1  POST `/api/upload`
+• Server workflow:  
+  1. `purgeExpired()`  
+  2. Write `<id>.bin` & `<id>.json` `{expiresAt}`  
+  3. Respond `{ id, expiresAt }`
+
+### 4.2  GET `/api/download/[id]`
+• Server workflow:  
+  1. `purgeExpired()`  
+  2. Read meta; if missing/expired → 410  
+  3. Stream `<id>.bin`  
+  4. `deletePair(id)`  (one-time)  
+
+──────────────────────────────────────────────────────────────────────────────
+5.  ENV VARIABLES  – simplified
+──────────────────────────────────────────────────────────────────────────────
+# .env.example
+FILE_TTL_MINUTES=60
+MAX_FILE_SIZE_MB=100
+NODE_ENV=development
+
+(That’s all!)
+
+──────────────────────────────────────────────────────────────────────────────
+6.  SECURITY & PRIVACY CHECKLIST  – updated items
+──────────────────────────────────────────────────────────────────────────────
+☑  TMP directory is **chmod 700**; files use 0600.  
+☑  `purgeExpired()` runs on every API hit; also add optional
+   `pnpm cron` script for a systemd/PM2 timer in production.  
+☑  Still enforce HTTPS, CSP, 100 MB limit, no request logging, etc.
+
+──────────────────────────────────────────────────────────────────────────────
+7.  DEV SCRIPTS / QUALITY GATES  (identical)
+──────────────────────────────────────────────────────────────────────────────
+"scripts": {
+  "dev"   : "next dev -p 3000",
+  "build" : "next build",
+  "start" : "next start",
+  "lint"  : "next lint",
+  "test"  : "vitest run",
+  "type"  : "tsc --noEmit",
+  "cron"  : "node scripts/purgeExpired.js"   # optional, calls lib/storage
+}
+
+──────────────────────────────────────────────────────────────────────────────
+8.  TODOs FOR CURSOR AI – diff from previous list
+──────────────────────────────────────────────────────────────────────────────
+4.  Replace former Upstash calls with `lib/storage.ts` FS KV methods.  
+5.  Remove any AWS / Redis deps from `package.json`.  
+6.  Ensure e2e tests simulate two successive downloads: 1st succeeds,
+    2nd returns 410 Gone.
+
+──────────────────────────────────────────────────────────────────────────────
+9.  ACCEPTANCE CRITERIA  (no change except storage)
+──────────────────────────────────────────────────────────────────────────────
+▪  Upload ≤ 100 MB, share, download once, 2nd attempt → 410, 60 min expiry.  
+▪  Local `/tmp/onedrop` contains **zero** files after expiry or one-time use.  
+
+# END OF SPEC
