@@ -8,6 +8,7 @@ import { toast } from "@/components/ui/toaster";
 export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [result, setResult] = useState<{ id: string; expiresAt: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -16,24 +17,60 @@ export default function Home() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setUploadProgress(0);
     setError(null);
     setResult(null);
+    
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
+      
+      // Use XMLHttpRequest to track upload progress
+      const xhr = new XMLHttpRequest();
+      
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          const progress = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(progress);
+        }
       });
-      if (!res.ok) {
-        throw new Error((await res.json()).error || "Upload failed");
-      }
-      const data = await res.json();
-      setResult(data);
-      toast.success("Upload completed! Link copied to clipboard.");
+      
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            setResult(data);
+            setUploadProgress(100);
+            toast.success("Upload completed! Link copied to clipboard.");
+          } catch (err) {
+            setError("Invalid response from server");
+          }
+        } else {
+          try {
+            const errorData = JSON.parse(xhr.responseText);
+            setError(errorData.error || "Upload failed");
+          } catch (err) {
+            setError("Upload failed");
+          }
+        }
+        setUploading(false);
+      });
+      
+      xhr.addEventListener('error', () => {
+        setError("Network error occurred");
+        setUploading(false);
+      });
+      
+      xhr.addEventListener('abort', () => {
+        setError("Upload was cancelled");
+        setUploading(false);
+      });
+      
+      xhr.open('POST', '/api/upload');
+      xhr.send(formData);
+      
     } catch (err: any) {
       setError(err.message || "Upload failed");
-    } finally {
       setUploading(false);
     }
   }
@@ -84,11 +121,22 @@ export default function Home() {
           />
           <Button
             size="lg"
-            className="w-full py-6 text-lg font-semibold rounded-xl shadow-md transition-all duration-150 hover:scale-[1.03]"
+            className="w-full py-6 text-lg font-semibold rounded-xl shadow-md transition-all duration-150 hover:scale-[1.03] relative overflow-hidden"
             onClick={triggerFileInput}
             disabled={uploading}
           >
-            {uploading ? "Uploading..." : "Upload a file"}
+            {uploading ? (
+              <>
+                <div className="absolute inset-0 bg-primary/20"></div>
+                <div 
+                  className="absolute inset-0 bg-primary/40 transition-all duration-300 ease-out"
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+                <span className="relative z-10">Uploading... {uploadProgress}%</span>
+              </>
+            ) : (
+              "Upload a file"
+            )}
           </Button>
           {error && <div className="text-red-500 text-sm text-center">{error}</div>}
           {result && (
