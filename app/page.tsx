@@ -2,7 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "../components/ui/button";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { toast } from "@/components/ui/toaster";
 
 export default function Home() {
@@ -12,6 +12,26 @@ export default function Home() {
   const [result, setResult] = useState<{ id: string; expiresAt: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [rateLimited, setRateLimited] = useState(false);
+  const [retryAfter, setRetryAfter] = useState<number | null>(null);
+
+  // Countdown timer for rate limit
+  useEffect(() => {
+    if (retryAfter && retryAfter > 0) {
+      const timer = setInterval(() => {
+        setRetryAfter(prev => {
+          if (prev && prev > 0) {
+            return prev - 1;
+          } else {
+            setRateLimited(false);
+            setError(null);
+            return null;
+          }
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [retryAfter]);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -44,6 +64,22 @@ export default function Home() {
             toast.success("Upload completed! Link copied to clipboard.");
           } catch (err) {
             setError("Invalid response from server");
+          }
+        } else if (xhr.status === 429) {
+          // Rate limit exceeded
+          try {
+            const errorData = JSON.parse(xhr.responseText);
+            setError(errorData.error);
+            setRateLimited(true);
+            
+            // Parse Retry-After header
+            const retryAfterHeader = xhr.getResponseHeader('Retry-After');
+            if (retryAfterHeader) {
+              setRetryAfter(parseInt(retryAfterHeader));
+            }
+          } catch (err) {
+            setError("Rate limit exceeded. Please wait before trying again.");
+            setRateLimited(true);
           }
         } else {
           try {
@@ -123,7 +159,7 @@ export default function Home() {
             size="lg"
             className="w-full py-6 text-lg font-semibold rounded-xl shadow-md transition-all duration-150 hover:scale-[1.03] relative overflow-hidden"
             onClick={triggerFileInput}
-            disabled={uploading}
+            disabled={uploading || rateLimited}
           >
             {uploading ? (
               <>
@@ -134,11 +170,36 @@ export default function Home() {
                 ></div>
                 <span className="relative z-10">Uploading... {uploadProgress}%</span>
               </>
+            ) : rateLimited ? (
+              <>
+                <div className="absolute inset-0 bg-destructive/20"></div>
+                <span className="relative z-10">
+                  Rate Limited
+                  {retryAfter && (
+                    <span className="block text-sm font-normal">
+                      Wait {Math.floor(retryAfter / 60)}:{(retryAfter % 60).toString().padStart(2, '0')}
+                    </span>
+                  )}
+                </span>
+              </>
             ) : (
               "Upload a file"
             )}
           </Button>
-          {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+          {error && (
+            <div className={`text-sm text-center p-3 rounded-lg ${
+              rateLimited 
+                ? 'bg-destructive/10 text-destructive border border-destructive/20' 
+                : 'text-red-500'
+            }`}>
+              {error}
+              {rateLimited && retryAfter && (
+                <div className="mt-2 text-xs opacity-80">
+                  You can upload 2 files every 10 minutes. Please wait for the timer to reset.
+                </div>
+              )}
+            </div>
+          )}
           {result && (
             <div className="flex flex-col items-center gap-3 bg-muted/60 border border-border rounded-xl p-4 shadow-inner animate-fade-in">
               <div className="text-green-700 dark:text-green-400 font-semibold">File uploaded!</div>
