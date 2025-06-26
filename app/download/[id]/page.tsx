@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toaster";
 import Image from "next/image";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DownloadPage() {
   const { id } = useParams<{ id: string }>();
@@ -52,13 +53,13 @@ export default function DownloadPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/60 px-4">
-      <div className="w-full max-w-lg bg-card/80 shadow-xl rounded-2xl p-8 flex flex-col items-center gap-8 border border-border backdrop-blur-md animate-fade-in">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="w-full max-w-lg bg-card shadow-xl rounded-2xl p-10 flex flex-col items-center gap-10 border border-border animate-fade-in">
         <div className="flex flex-col items-center gap-2">
           <Link href="/" className="transition-transform hover:scale-105">
-            <Image src="/logo-transparent.png" alt="QQShare logo" width={100} height={100} className="dark:invert drop-shadow-lg" />
+            <Image src="/logo-transparent.png" alt="QQShare logo" width={100} height={100} className="drop-shadow-lg" />
           </Link>
-          <h1 className="text-3xl font-extrabold tracking-tight text-center mb-1">Download File</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight text-center mb-1 text-foreground">Download File</h1>
         </div>
         {error ? (
           <div className="flex flex-col items-center gap-2 text-center">
@@ -66,17 +67,21 @@ export default function DownloadPage() {
             <span className="text-muted-foreground text-sm">If you believe this is a mistake, please ask the sender to re-upload the file.</span>
           </div>
         ) : !fileInfo ? (
-          <div className="flex flex-col items-center justify-center min-h-[120px]">Loading…</div>
+          <div className="flex flex-col items-center justify-center min-h-[120px] w-full gap-4">
+            <Skeleton className="h-6 w-2/3 mb-2" />
+            <Skeleton className="h-4 w-1/3 mb-2" />
+            <Skeleton className="h-10 w-1/2 rounded-xl" />
+          </div>
         ) : (
           <div className="flex flex-col items-center gap-4 w-full">
-            <div className="text-lg font-medium text-center break-all">{fileInfo.originalName}</div>
+            <div className="text-lg font-medium text-center break-all text-foreground">{fileInfo.originalName}</div>
             <div className="text-sm text-muted-foreground">Expires: {new Date(fileInfo.expiresAt).toLocaleString()}</div>
             {!downloaded ? (
               <Button size="lg" className="w-full max-w-xs py-4 text-lg font-semibold rounded-xl shadow-md transition-all duration-150 hover:scale-[1.03]" onClick={handleDownload} disabled={downloading}>
                 {downloading ? "Downloading…" : "Download"}
               </Button>
             ) : (
-              <div className="text-green-700 dark:text-green-400 font-semibold text-center">Download started! This file is now deleted from the server.</div>
+              <div className="text-green-600 font-semibold text-center">Download started! This file is now deleted from the server.</div>
             )}
           </div>
         )}
