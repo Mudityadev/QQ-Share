@@ -15,23 +15,46 @@
 - **Backend:** Next.js Route Handlers (API)
 - **Storage:** Local FS (`/tmp/onedrop/<id>.bin` and `<id>.json`)
 
-## Usage
-1. Run the dev server:
+## Getting Started
+1. Copy `.env.example` to `.env` and adjust values as needed:
+   ```bash
+   cp .env.example .env
+   # Edit .env to customize limits and expiry
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   # or: yarn / pnpm / bun
+   ```
+3. Run the dev server:
    ```bash
    npm run dev
    # or: yarn dev / pnpm dev / bun dev
    ```
-2. Open [http://localhost:3000](http://localhost:3000)
-3. Upload a file and share the generated link.
+4. Open [http://localhost:3000](http://localhost:3000)
+5. Upload a file and share the generated link.
 
 ## API
 - `POST /api/upload` — Uploads file, returns `{ id, expiresAt }`
 - `GET /api/download/[id]` — Downloads file (once), then deletes it. Second attempt returns 410.
 
 ## Environment Variables
+All configuration is via environment variables. See `.env.example` for a template.
+
 ```
+# File expiry time in minutes (default: 60)
 FILE_TTL_MINUTES=60
-MAX_FILE_SIZE_MB=100
+
+# Maximum file size in MB for free tier (default: 10)
+MAX_FILE_SIZE_MB=10
+
+# Maximum number of uploads per window per IP (default: 2)
+MAX_UPLOADS_PER_WINDOW=2
+
+# Rate limit window in seconds (default: 600 for 10 minutes)
+RATE_LIMIT_WINDOW=600
+
+# Node environment (development/production)
 NODE_ENV=development
 ```
 
