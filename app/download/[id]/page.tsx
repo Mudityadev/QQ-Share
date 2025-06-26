@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toaster";
 import Image from "next/image";
@@ -54,7 +55,9 @@ export default function DownloadPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/60 px-4">
       <div className="w-full max-w-lg bg-card/80 shadow-xl rounded-2xl p-8 flex flex-col items-center gap-8 border border-border backdrop-blur-md animate-fade-in">
         <div className="flex flex-col items-center gap-2">
-          <Image src="/logo-transparent.png" alt="QQShare logo" width={100} height={100} className="dark:invert drop-shadow-lg" />
+          <Link href="/" className="transition-transform hover:scale-105">
+            <Image src="/logo-transparent.png" alt="QQShare logo" width={100} height={100} className="dark:invert drop-shadow-lg" />
+          </Link>
           <h1 className="text-3xl font-extrabold tracking-tight text-center mb-1">Download File</h1>
         </div>
         {error ? (

@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import Link from "next/link";
 import { Button } from "../components/ui/button";
 import React, { useRef, useState } from "react";
 import { toast } from "@/components/ui/toaster";
@@ -54,14 +55,16 @@ export default function Home() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/60 px-4">
       <div className="w-full max-w-lg bg-card/80 shadow-xl rounded-2xl p-8 flex flex-col items-center gap-8 border border-border backdrop-blur-md">
         <div className="flex flex-col items-center gap-2 animate-fade-in">
-          <Image
-            src="/logo-transparent.png"
-            alt="QQShare logo"
-            width={120}
-            height={120}
-            className="dark:invert drop-shadow-lg"
-            priority
-          />
+          <Link href="/" className="transition-transform hover:scale-105">
+            <Image
+              src="/logo-transparent.png"
+              alt="QQShare logo"
+              width={120}
+              height={120}
+              className="dark:invert drop-shadow-lg"
+              priority
+            />
+          </Link>
           <h1 className="text-4xl font-extrabold tracking-tight text-center mb-1">QQShare</h1>
           <div className="bg-muted/40 rounded-xl p-4 shadow-sm border border-border w-full max-w-md">
             <p className="text-base sm:text-lg text-muted-foreground text-center leading-snug">
@@ -104,14 +107,6 @@ export default function Home() {
                   {copied ? "Copied!" : "Copy"}
                 </Button>
               </div>
-              <a
-                href={`/download/${result.id}`}
-                className="underline text-blue-600 dark:text-blue-400 text-sm font-medium mt-1"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Open download page
-              </a>
               <div className="text-xs text-muted-foreground mt-1">
                 Expires: {new Date(result.expiresAt).toLocaleString()}
               </div>
