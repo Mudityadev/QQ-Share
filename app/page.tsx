@@ -23,6 +23,44 @@ export default function Home() {
   const [showProUpgrade, setShowProUpgrade] = useState(false);
   const [upgradeVariant, setUpgradeVariant] = useState<"rate-limit" | "file-size" | "general">("general");
 
+  // Restore rate limit state from localStorage on mount
+  useEffect(() => {
+    const storedRetryAfter = localStorage.getItem("qqshare_retryAfter");
+    const storedRateLimited = localStorage.getItem("qqshare_rateLimited");
+    const storedShowProUpgrade = localStorage.getItem("qqshare_showProUpgrade");
+    const storedUpgradeVariant = localStorage.getItem("qqshare_upgradeVariant");
+    const storedTimestamp = localStorage.getItem("qqshare_rateLimitTimestamp");
+
+    if (storedRetryAfter && storedRateLimited && storedShowProUpgrade && storedTimestamp) {
+      const now = Math.floor(Date.now() / 1000);
+      const expiresAt = parseInt(storedTimestamp) + parseInt(storedRetryAfter);
+      if (now < expiresAt) {
+        setRetryAfter(expiresAt - now);
+        setRateLimited(storedRateLimited === "true");
+        setShowProUpgrade(storedShowProUpgrade === "true");
+        setUpgradeVariant((storedUpgradeVariant as any) || "rate-limit");
+      } else {
+        // Expired, clear
+        localStorage.removeItem("qqshare_retryAfter");
+        localStorage.removeItem("qqshare_rateLimited");
+        localStorage.removeItem("qqshare_showProUpgrade");
+        localStorage.removeItem("qqshare_upgradeVariant");
+        localStorage.removeItem("qqshare_rateLimitTimestamp");
+      }
+    }
+  }, []);
+
+  // Persist rate limit state to localStorage when set
+  useEffect(() => {
+    if (rateLimited && retryAfter && showProUpgrade) {
+      localStorage.setItem("qqshare_retryAfter", retryAfter.toString());
+      localStorage.setItem("qqshare_rateLimited", "true");
+      localStorage.setItem("qqshare_showProUpgrade", "true");
+      localStorage.setItem("qqshare_upgradeVariant", upgradeVariant);
+      localStorage.setItem("qqshare_rateLimitTimestamp", Math.floor(Date.now() / 1000).toString());
+    }
+  }, [rateLimited, retryAfter, showProUpgrade, upgradeVariant]);
+
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -138,6 +176,12 @@ export default function Home() {
     setRateLimited(false);
     setRetryAfter(null);
     setError(null);
+    // Clear localStorage
+    localStorage.removeItem("qqshare_retryAfter");
+    localStorage.removeItem("qqshare_rateLimited");
+    localStorage.removeItem("qqshare_showProUpgrade");
+    localStorage.removeItem("qqshare_upgradeVariant");
+    localStorage.removeItem("qqshare_rateLimitTimestamp");
   }
 
   const downloadUrl = result ? `${window.location.origin}/download/${result.id}` : "";
