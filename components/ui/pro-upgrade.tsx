@@ -1,17 +1,40 @@
 import { Button } from "@/components/ui/button";
 import { Crown, Zap, Shield, Upload } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import * as React from "react";
 
 interface ProUpgradeProps {
   onUpgrade?: () => void;
   variant?: "rate-limit" | "file-size" | "general";
-  remainingTime?: number;
+  remainingTime?: number; // in seconds
+  onTimerEnd?: () => void;
 }
 
 const MAX_FILE_SIZE_MB = parseInt(process.env.MAX_FILE_SIZE_MB || "10", 10);
 const PRO_FILE_SIZE_MB = parseInt(process.env.PRO_FILE_SIZE_MB || "100", 10);
 const MAX_UPLOADS_PER_WINDOW = parseInt(process.env.MAX_UPLOADS_PER_WINDOW || "2", 10);
 
-export function ProUpgrade({ onUpgrade, variant = "general", remainingTime }: ProUpgradeProps) {
+export function ProUpgrade({ onUpgrade, variant = "general", remainingTime, onTimerEnd }: ProUpgradeProps) {
+  const [timer, setTimer] = React.useState(remainingTime || 0);
+
+  React.useEffect(() => {
+    if (variant === "rate-limit" && timer > 0) {
+      const interval = setInterval(() => {
+        setTimer((prev) => {
+          if (prev > 1) return prev - 1;
+          clearInterval(interval);
+          if (onTimerEnd) onTimerEnd();
+          return 0;
+        });
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [variant, timer, onTimerEnd]);
+
+  React.useEffect(() => {
+    if (typeof remainingTime === "number") setTimer(remainingTime);
+  }, [remainingTime]);
+
   const getTitle = () => {
     switch (variant) {
       case "rate-limit":
@@ -57,25 +80,31 @@ export function ProUpgrade({ onUpgrade, variant = "general", remainingTime }: Pr
     }
   ];
 
+  const formatTimer = (sec: number) => {
+    const min = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${min}:${s.toString().padStart(2, "0")}`;
+  };
+
   return (
-    <div className="w-full max-w-md mx-auto bg-gradient-to-br from-[#18192a] to-[#23243a] border border-purple-700/40 rounded-xl p-6 shadow-2xl backdrop-blur-sm">
+    <div className="w-full max-w-md mx-auto bg-card border border-border rounded-xl p-6 shadow-2xl">
       <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full mb-4 shadow-lg">
-          <Crown className="w-6 h-6 text-white" />
+        <div className="inline-flex items-center justify-center w-12 h-12 bg-primary rounded-full mb-4 shadow-lg">
+          <Crown className="w-6 h-6 text-primary-foreground" />
         </div>
-        <h3 className="text-xl font-semibold text-white mb-2 drop-shadow">{getTitle()}</h3>
-        <p className="text-gray-300 text-sm leading-relaxed drop-shadow-sm">{getDescription()}</p>
+        <h3 className="text-xl font-semibold text-foreground mb-2">{getTitle()}</h3>
+        <p className="text-muted-foreground text-sm leading-relaxed">{getDescription()}</p>
       </div>
 
       <div className="space-y-3 mb-6">
         {features.map((feature, index) => (
           <div key={index} className="flex items-center space-x-3">
-            <div className="flex-shrink-0 w-8 h-8 bg-purple-700/30 rounded-lg flex items-center justify-center shadow">
-              <feature.icon className="w-4 h-4 text-purple-300" />
+            <div className="flex-shrink-0 w-8 h-8 bg-muted rounded-lg flex items-center justify-center shadow">
+              <feature.icon className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <h4 className="text-sm font-medium text-white drop-shadow">{feature.title}</h4>
-              <p className="text-xs text-gray-400">{feature.description}</p>
+              <h4 className="text-sm font-medium text-foreground">{feature.title}</h4>
+              <p className="text-xs text-muted-foreground">{feature.description}</p>
             </div>
           </div>
         ))}
@@ -84,17 +113,19 @@ export function ProUpgrade({ onUpgrade, variant = "general", remainingTime }: Pr
       <div className="space-y-3">
         <Button 
           onClick={onUpgrade}
-          className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium py-3 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg border border-purple-700/40"
+          className="w-full"
         >
-          <Crown className="w-4 h-4 mr-2 text-white" />
+          <Crown className="w-4 h-4 mr-2 text-primary-foreground" />
           Upgrade to Pro - $9.99/month
         </Button>
-        
-        {variant === "rate-limit" && remainingTime && (
-          <div className="text-center">
-            <p className="text-xs text-gray-400">
-              Or wait {Math.ceil(remainingTime / 60)} minutes for free tier reset
-            </p>
+        {variant === "rate-limit" && timer > 0 && (
+          <div className="flex flex-col items-center gap-1 mt-2">
+            <Badge variant="outline" className="align-middle w-fit">
+              {formatTimer(timer)}
+            </Badge>
+            <span className="text-xs text-muted-foreground mt-1">
+              Or wait {Math.ceil(timer / 60)} minute{Math.ceil(timer / 60) !== 1 ? "s" : ""} for free tier reset
+            </span>
           </div>
         )}
       </div>

@@ -22,40 +22,6 @@ export default function Home() {
   const [retryAfter, setRetryAfter] = useState<number | null>(null);
   const [showProUpgrade, setShowProUpgrade] = useState(false);
   const [upgradeVariant, setUpgradeVariant] = useState<"rate-limit" | "file-size" | "general">("general");
-  const [timerDisplay, setTimerDisplay] = useState<string>("");
-  const [initialRetryAfter, setInitialRetryAfter] = useState<number | null>(null);
-
-  // Countdown timer for rate limit
-  useEffect(() => {
-    if (retryAfter && retryAfter > 0) {
-      const updateTimer = () => {
-        const min = Math.floor(retryAfter / 60);
-        const sec = retryAfter % 60;
-        setTimerDisplay(`${min}:${sec.toString().padStart(2, "0")}`);
-      };
-      updateTimer();
-      const timer = setInterval(() => {
-        setRetryAfter(prev => {
-          if (prev && prev > 0) {
-            const next = prev - 1;
-            const min = Math.floor(next / 60);
-            const sec = next % 60;
-            setTimerDisplay(`${min}:${sec.toString().padStart(2, "0")}`);
-            return next;
-          } else {
-            setRateLimited(false);
-            setError(null);
-            setShowProUpgrade(false);
-            setTimerDisplay("");
-            return null;
-          }
-        });
-      }, 1000);
-      return () => clearInterval(timer);
-    } else {
-      setTimerDisplay("");
-    }
-  }, [retryAfter]);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -103,7 +69,6 @@ export default function Home() {
             const retryAfterHeader = xhr.getResponseHeader('Retry-After');
             if (retryAfterHeader) {
               setRetryAfter(parseInt(retryAfterHeader));
-              setInitialRetryAfter(parseInt(retryAfterHeader));
             }
           } catch (err) {
             setError("Rate limit exceeded. Please wait before trying again.");
@@ -165,9 +130,14 @@ export default function Home() {
   }
 
   function handleUpgrade() {
-    // In a real app, this would redirect to a payment page
     toast.info("Pro upgrade coming soon! This would redirect to payment.");
+  }
+
+  function handleProTimerEnd() {
     setShowProUpgrade(false);
+    setRateLimited(false);
+    setRetryAfter(null);
+    setError(null);
   }
 
   const downloadUrl = result ? `${window.location.origin}/download/${result.id}` : "";
@@ -187,12 +157,19 @@ export default function Home() {
             />
           </Link>
           <h1 className="text-4xl font-extrabold tracking-tight text-center mb-1 text-foreground">QQShare</h1>
-          <div className="bg-muted rounded-xl p-4 shadow border border-border w-full max-w-md">
-            <p className="text-base sm:text-lg text-muted-foreground text-center leading-snug">
-              Secure, one-time file sharing.<br />
-              Upload (≤10&nbsp;MB), get a private link <br /> share for one download.<br />
-              100% client-side AES-256 encryption.
-            </p>
+          <div className="w-full max-w-md mx-auto bg-card border border-border rounded-xl p-6 shadow-2xl flex flex-col items-center mb-2">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-primary rounded-full mb-3 shadow-lg">
+              {/* Use a lock icon from lucide-react */}
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 17a2 2 0 100-4 2 2 0 000 4zm6-7V7a6 6 0 10-12 0v3a2 2 0 00-2 2v7a2 2 0 002 2h12a2 2 0 002-2v-7a2 2 0 00-2-2zm-8-3a4 4 0 118 0v3H6V7z" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-semibold text-foreground mb-1">Secure, one-time file sharing.</h2>
+            <ul className="text-base sm:text-lg text-muted-foreground text-center leading-snug space-y-1">
+              <li>Upload (≤10&nbsp;MB), get a private link</li>
+              <li>Share for one download.</li>
+              <li>100% client-side AES-256 encryption.</li>
+            </ul>
           </div>
         </div>
         
@@ -201,6 +178,7 @@ export default function Home() {
             variant={upgradeVariant}
             remainingTime={retryAfter || undefined}
             onUpgrade={handleUpgrade}
+            onTimerEnd={handleProTimerEnd}
           />
         ) : (
           <div className="w-full flex flex-col gap-6">
@@ -230,10 +208,6 @@ export default function Home() {
                       Uploading... {uploadProgress}%
                     </span>
                   </>
-                ) : rateLimited ? (
-                  <div className="text-sm text-center p-3 rounded-lg bg-destructive/10 text-destructive border border-destructive/20">
-                    {error}
-                  </div>
                 ) : (
                   "Upload a file"
                 )}
@@ -247,25 +221,6 @@ export default function Home() {
               }`}>
                 {error}
               </div>
-            )}
-            {rateLimited && (
-              <Alert variant="destructive" className="mt-2">
-                <AlertCircleIcon className="w-5 h-5 mt-0.5" />
-                <div className="w-full">
-                  <AlertTitle>Rate Limited</AlertTitle>
-                  <AlertDescription className="flex flex-col gap-2">
-                    <span>Please wait for the timer to reset.</span>
-                    {timerDisplay && (
-                      <Badge variant="outline" className="align-middle w-fit">
-                        {timerDisplay}
-                      </Badge>
-                    )}
-                    {initialRetryAfter && retryAfter !== null && (
-                      <Progress value={100 - (retryAfter / initialRetryAfter) * 100} className="w-full mt-2" />
-                    )}
-                  </AlertDescription>
-                </div>
-              </Alert>
             )}
             {result && (
               <div className="flex flex-col items-center gap-3 bg-muted border border-border rounded-xl p-4 shadow-inner animate-fade-in">
