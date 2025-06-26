@@ -190,31 +190,30 @@ export default function Home() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-lg bg-card shadow-xl rounded-2xl p-10 flex flex-col items-center gap-10 border border-border">
         <div className="flex flex-col items-center gap-2 animate-fade-in">
-          <Link href="/" className="transition-transform hover:scale-105">
-            <Image
-              src="/logo-transparent.png"
-              alt="QQShare logo"
-              width={120}
-              height={120}
-              className="drop-shadow-lg"
-              priority
-            />
-          </Link>
-          <h1 className="text-4xl font-extrabold tracking-tight text-center mb-1 text-foreground">QQShare</h1>
-          <div className="w-full max-w-md mx-auto bg-card border border-border rounded-xl p-6 shadow-2xl flex flex-col items-center mb-2">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-primary rounded-full mb-3 shadow-lg">
-              {/* Use a lock icon from lucide-react */}
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 17a2 2 0 100-4 2 2 0 000 4zm6-7V7a6 6 0 10-12 0v3a2 2 0 00-2 2v7a2 2 0 002 2h12a2 2 0 002-2v-7a2 2 0 00-2-2zm-8-3a4 4 0 118 0v3H6V7z" />
-              </svg>
+          <div className="flex items-center gap-3">
+            <Link href="/" className="transition-transform hover:scale-105">
+              <Image
+                src="/logo-transparent.png"
+                alt="QQShare logo"
+                width={120}
+                height={120}
+                className="drop-shadow-lg"
+                priority
+              />
+            </Link>
+            <div className="flex flex-col justify-center">
+              <h1 className="text-4xl font-extrabold tracking-tight text-foreground leading-tight">QQShare</h1>
+              <span className="text-xs text-muted-foreground font-medium mt-1 ml-1">
+                <a href="https://mudityadev.vercel.app/" target="_blank" rel="noopener noreferrer" className="hover:underline">By Muditya Raghav</a>
+              </span>
             </div>
-            <h2 className="text-lg font-semibold text-foreground mb-1">Secure, one-time file sharing.</h2>
-            <ul className="text-base sm:text-lg text-muted-foreground text-center leading-snug space-y-1">
-              <li>Upload (≤10&nbsp;MB), get a private link</li>
-              <li>Share for one download.</li>
-              <li>100% client-side AES-256 encryption.</li>
-            </ul>
           </div>
+          <h2 className="text-lg font-semibold text-foreground mb-1">Secure, one-time file sharing.</h2>
+          <ul className="text-base sm:text-lg text-muted-foreground text-center leading-snug space-y-1">
+            <li>Upload (≤10&nbsp;MB), get a private link</li>
+            <li>Share for one download.</li>
+            <li>100% client-side AES-256 encryption.</li>
+          </ul>
         </div>
         
         {showProUpgrade ? (
